@@ -1,8 +1,9 @@
 use primitive_types::U256;
+use serde::{Deserialize, Serialize};
 
 type Body = [u8; 1024];
 
-#[derive(Debug)]
+#[derive(Debug)] # Deserialize, Serialize
 pub struct Post {
     prev: U256, // previous post (32 bytes)
     work: U256, // extra info and nonce (32 bytes)

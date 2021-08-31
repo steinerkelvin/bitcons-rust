@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "bitcons",
-        "hasher"
+        "hasher",
+        "serde"
     ]
 }
