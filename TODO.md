@@ -1,0 +1,2 @@
+- [ ] study `bincode` encoding and size overhead
+- [ ] move to C-like serialization?
