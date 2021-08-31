@@ -1,13 +1,27 @@
 mod common;
 
-use common::Body;
+// use common::Body;
 
 #[cfg(test)]
 mod tests {
-    use super::Body;
+    use hex_literal::hex;
+    use sha3::{Digest, Keccak256};
+
+    // use super::Body;
+
+    // #[test]
+    // fn it_works() {
+    //     // let _body = Body::new([0; 1024]);
+    // }
 
     #[test]
-    fn it_works() {
-        let _body = Body::new([0; 1024]);
+    fn keccak256() {
+        let src = hex!("0102ff017fcafe8879124567");
+        let target =
+            hex!("c9b5588fbab512ba723a18d506daf06fd5a4a6bb2d8a1ff512d577f8393c4405");
+        let mut hasher = Keccak256::new();
+        hasher.update(src);
+        let result = hasher.finalize();
+        assert_eq!(target, result[..]);
     }
 }
