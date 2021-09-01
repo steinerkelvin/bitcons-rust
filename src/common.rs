@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
-use primitive_types::U256;
 use serde::{Serialize, Serializer};
+use primitive_types::U256;
+use sha3::Digest;
 
 const WORD_SIZE: usize = 32; // 256 bits
 const BODY_SIZE: usize = 1024;
@@ -55,20 +56,25 @@ impl Post {
             body: body.clone(),
         }
     }
-    fn hash(&self) -> U256 {
-        U256::from_little_endian(&[0; 32])
-    }
-    fn ser_to(&self, buf: &mut [u8; POST_SIZE]) {
+    fn serialize_to(&self, buf: &mut [u8; POST_SIZE]) {
         self.prev.to_little_endian(&mut buf[00..32]);
         self.work.to_little_endian(&mut buf[32..64]);
         self.body.ser_to(&mut buf[64..]);
     }
-    fn ser(&self) -> [u8; POST_SIZE] {
+    fn serialize(&self) -> [u8; POST_SIZE] {
         let mut buf = [0u8; POST_SIZE];
-        self.ser_to(&mut buf);
+        self.serialize_to(&mut buf);
         buf
     }
-}
+    fn hash(&self) -> U256 {
+        let ser = self.serialize();
+        let mut hasher = sha3::Keccak256::new();
+        hasher.update(&ser);
+        let hash = hasher.finalize();
+        let res = U256::from_little_endian(&hash);
+        res
+    }
+ }
 
 #[cfg(test)]
 mod tests {
@@ -105,7 +111,7 @@ mod tests {
         // let mut encoded = [0u8; Post_size];
         // post.ser(&mut encoded);
 
-        let encoded = post.ser();
+        let encoded = post.serialize();
 
         println!("ENCODED:");
         for i in 0..encoded.len() {
@@ -114,6 +120,7 @@ mod tests {
 
         println!("LEN: {:?}", encoded.len());
         assert_eq!(encoded.len(), POST_SIZE);
-        println!("HASH: {:?}", post.hash());
+
+        println!("HASH: {:x}", post.hash());
     }
 }
