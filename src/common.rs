@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use primitive_types::U256;
-use serde::{Serialize, Serializer};
+// use serde::{Serialize, Serializer};
 use sha3::Digest;
 
 const WORD_SIZE: usize = 32; // 256 bits
@@ -21,19 +21,19 @@ impl Default for Body {
     }
 }
 
-impl Serialize for Body {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        use serde::ser::SerializeSeq;
-        let mut seq_ser = serializer.serialize_seq(Some(BODY_SIZE))?;
-        for i in 0..(self.val.len()) {
-            seq_ser.serialize_element(&self.val[i])?;
-        }
-        seq_ser.end()
-    }
-}
+// impl Serialize for Body {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         use serde::ser::SerializeSeq;
+//         let mut seq_ser = serializer.serialize_seq(Some(BODY_SIZE))?;
+//         for i in 0..(self.val.len()) {
+//             seq_ser.serialize_element(&self.val[i])?;
+//         }
+//         seq_ser.end()
+//     }
+// }
 
 impl From<[u8; 1024]> for Body {
     fn from(val: [u8; 1024]) -> Self {
@@ -49,7 +49,7 @@ impl Body {
     }
 }
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Default)]
 pub struct Post {
     prev: U256, // previous post (32 bytes)
     work: U256, // extra info and nonce (32 bytes)
@@ -88,6 +88,7 @@ impl Post {
 
 fn hash_score(hash: U256) -> U256 {
     if hash.is_zero() {
+        // redundant. keep for clarity?
         U256::zero()
     } else {
         // divides hash by max 256-bit value

@@ -1,3 +1,6 @@
+- [ ] serialization / deserialization with Iterators?
+  - https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.chain
+  - [ ] de/ser on U256
 - [ ] Post deserialization
 - [ ] Message enum
   - [ ] serialization
