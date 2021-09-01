@@ -1,10 +1,5 @@
-- [x] serialization / deserialization with Iterators
-- [ ] test (de)ser iterator chain
-  - https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.chain
-- [] U256
-  - [x] ser on U256
-  - [ ] deser on U256
 - Post
+  - https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.chain
   - [ ] ser
   - [ ] deser
 - [ ] Message enum

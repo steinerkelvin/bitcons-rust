@@ -6,7 +6,15 @@ trait Ser<'a> {
 }
 
 // Deserializable from bytes from iterator
-trait Deser {}
+trait Deser {
+    fn deser_from_iter<I>(it: I) -> Self
+    where
+        I: Iterator<Item = u8>;
+}
+
+// U256 implementation
+
+const U256_SIZE: usize = 256 / 8;
 
 struct U256SerIter<'a> {
     val: &'a U256,
@@ -19,11 +27,23 @@ impl<'a> Ser<'a> for U256 {
     }
 }
 
+impl Deser for U256 {
+    fn deser_from_iter<I>(it: I) -> Self
+    where
+        I: Iterator<Item = u8>,
+    {
+        let it = it.take(U256_SIZE);
+        let bytes: Vec<u8> = it.collect();
+        // TODO test size
+        U256::from_little_endian(bytes.as_slice())
+    }
+}
+
 impl Iterator for U256SerIter<'_> {
     type Item = u8;
 
     fn next(&mut self) -> Option<u8> {
-        if self.pos >= 256 / 8 {
+        if self.pos >= U256_SIZE {
             None
         } else {
             let res = self.val.byte(self.pos);
@@ -44,11 +64,13 @@ mod tests {
             19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
         ]);
         let iter = v.ser_iter();
-        let items: Vec<u8> = iter.collect();
-        assert_eq!(items.len(), 256 / 8);
-        let iter = v.ser_iter();
         for (i, v) in iter.enumerate() {
             println!("{:2}: {:x}", i, v);
         }
+        let iter = v.ser_iter();
+        let encoded: Vec<u8> = iter.collect();
+        assert_eq!(encoded.len(), U256_SIZE);
+        let reconstructed = U256::deser_from_iter(encoded.iter().cloned());
+        assert!(reconstructed.eq(&v));
     }
 }
