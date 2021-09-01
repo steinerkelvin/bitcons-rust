@@ -15,7 +15,9 @@ struct Body {
 
 impl Default for Body {
     fn default() -> Self {
-        Body { val: [0u8; BODY_SIZE] }
+        Body {
+            val: [0u8; BODY_SIZE],
+        }
     }
 }
 
@@ -25,7 +27,7 @@ impl Serialize for Body {
         S: Serializer,
     {
         use serde::ser::SerializeSeq;
-        let mut seq_ser = serializer.serialize_seq(Some(1024))?;
+        let mut seq_ser = serializer.serialize_seq(Some(BODY_SIZE))?;
         for i in 0..(self.val.len()) {
             seq_ser.serialize_element(&self.val[i])?;
         }
@@ -40,7 +42,7 @@ impl From<[u8; 1024]> for Body {
 }
 
 impl Body {
-    fn ser_to(&self, bytes: &mut [u8]) {
+    fn serialize_to(&self, bytes: &mut [u8]) {
         for i in 0..(self.val.len()) {
             bytes[i] = self.val[i];
         }
@@ -65,7 +67,7 @@ impl Post {
     fn serialize_to(&self, buf: &mut [u8; POST_SIZE]) {
         self.prev.to_little_endian(&mut buf[00..32]);
         self.work.to_little_endian(&mut buf[32..64]);
-        self.body.ser_to(&mut buf[64..]);
+        self.body.serialize_to(&mut buf[64..(64 + BODY_SIZE)]);
     }
     fn serialize(&self) -> [u8; POST_SIZE] {
         let mut buf = [0u8; POST_SIZE];
@@ -84,25 +86,31 @@ impl Post {
     }
 }
 
+fn hash_score(hash: U256) -> U256 {
+    if hash.is_zero() {
+        U256::zero()
+    } else {
+        // divides hash by max 256-bit value
+        U256::max_value().checked_div(hash).unwrap_or(U256::zero())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use primitive_types::U256;
+    use super::*;
     use rand::prelude::*;
-
-    use super::POST_SIZE;
-    use super::{Body, Post};
 
     #[test]
     fn post_hash() {
         let mut rng = rand::thread_rng();
-        let buf = rng.gen::<[u8; 32]>();
-        let work = U256::from_little_endian(&buf);
+        let prev_arr = rng.gen::<[u8; 32]>();
+        let prev = U256::from_little_endian(&prev_arr);
 
         // let work = U256::from_little_endian(&[0x42]);
         // let work = U256::from(0x44556677u64);
 
-        let prev = U256::from(0x04050607u64);
-        let body: Body = Body::from([0x42; 1024]);
+        let work = U256::from(0x04050607u64);
+        let body: Body = Body::from([0x42; BODY_SIZE]);
 
         let post = Post::new(&prev, &work, &body);
         println!("POST: {:?}", post);
@@ -129,7 +137,9 @@ mod tests {
         println!("LEN: {:?}", encoded.len());
         assert_eq!(encoded.len(), POST_SIZE);
 
-        println!("HASH: {:x}", post.hash());
+        let hash = post.hash();
+        println!("HASH: {:x}", hash);
+        println!("SCORE: {}", hash_score(hash));
     }
 
     #[test]

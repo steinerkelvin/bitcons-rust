@@ -1,2 +1,5 @@
-- [ ] study `bincode` encoding and size overhead
-- [ ] move to C-like serialization?
+- [ ] Post deserialization
+- [ ] Message enum
+  - [ ] serialization
+  - [ ] deserialization
+- [ ] test score distribution
