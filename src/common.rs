@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use serde::{Serialize, Serializer};
 use primitive_types::U256;
+use serde::{Serialize, Serializer};
 use sha3::Digest;
 
 const WORD_SIZE: usize = 32; // 256 bits
@@ -11,6 +11,12 @@ const POST_SIZE: usize = 2 * WORD_SIZE + BODY_SIZE;
 #[derive(Debug, Clone)]
 struct Body {
     val: [u8; BODY_SIZE],
+}
+
+impl Default for Body {
+    fn default() -> Self {
+        Body { val: [0u8; BODY_SIZE] }
+    }
 }
 
 impl Serialize for Body {
@@ -41,7 +47,7 @@ impl Body {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 pub struct Post {
     prev: U256, // previous post (32 bytes)
     work: U256, // extra info and nonce (32 bytes)
@@ -67,22 +73,24 @@ impl Post {
         buf
     }
     fn hash(&self) -> U256 {
+        if self.prev.is_zero() && self.work.is_zero() {
+            return U256::zero();
+        }
         let ser = self.serialize();
-        let mut hasher = sha3::Keccak256::new();
-        hasher.update(&ser);
-        let hash = hasher.finalize();
+        let hasher = sha3::Keccak256::new();
+        let hash = hasher.chain(&ser).finalize();
         let res = U256::from_little_endian(&hash);
         res
     }
- }
+}
 
 #[cfg(test)]
 mod tests {
     use primitive_types::U256;
     use rand::prelude::*;
 
-    use super::{Body, Post};
     use super::POST_SIZE;
+    use super::{Body, Post};
 
     #[test]
     fn post_hash() {
@@ -97,7 +105,7 @@ mod tests {
         let body: Body = Body::from([0x42; 1024]);
 
         let post = Post::new(&prev, &work, &body);
-        println!("POST: {:#?}", post);
+        println!("POST: {:?}", post);
 
         // // Serialize Post with `bincode`
         // let encoded: Vec<u8> = bincode::serialize(&post).unwrap();
@@ -122,5 +130,12 @@ mod tests {
         assert_eq!(encoded.len(), POST_SIZE);
 
         println!("HASH: {:x}", post.hash());
+    }
+
+    #[test]
+    fn genesis_post_hash_is_zero() {
+        use std::default::Default;
+        let genesis = Post::default();
+        assert_eq!(genesis.hash(), U256::zero());
     }
 }
