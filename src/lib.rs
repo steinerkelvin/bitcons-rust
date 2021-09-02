@@ -1,19 +1,10 @@
 mod common;
 mod seredere;
 
-// use common::Body;
-
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
     use sha3::{Digest, Keccak256};
-
-    // use super::Body;
-
-    // #[test]
-    // fn it_works() {
-    //     // let _body = Body::new([0; 1024]);
-    // }
 
     #[test]
     fn keccak256() {

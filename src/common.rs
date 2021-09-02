@@ -4,12 +4,14 @@ use primitive_types::U256;
 // use serde::{Serialize, Serializer};
 use sha3::Digest;
 
-const WORD_SIZE: usize = 32; // 256 bits
-const BODY_SIZE: usize = 1024;
-const POST_SIZE: usize = 2 * WORD_SIZE + BODY_SIZE;
+use super::seredere::{Deser, Ser, U8Iterator};
+
+pub const WORD_SIZE: usize = 32; // 256 bits
+pub const BODY_SIZE: usize = 1024;
+pub const POST_SIZE: usize = 2 * WORD_SIZE + BODY_SIZE;
 
 #[derive(Debug, Clone)]
-struct Body {
+pub struct Body {
     val: [u8; BODY_SIZE],
 }
 
@@ -21,23 +23,15 @@ impl Default for Body {
     }
 }
 
-// impl Serialize for Body {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: Serializer,
-//     {
-//         use serde::ser::SerializeSeq;
-//         let mut seq_ser = serializer.serialize_seq(Some(BODY_SIZE))?;
-//         for i in 0..(self.val.len()) {
-//             seq_ser.serialize_element(&self.val[i])?;
-//         }
-//         seq_ser.end()
-//     }
-// }
-
 impl From<[u8; 1024]> for Body {
     fn from(val: [u8; 1024]) -> Self {
         Body { val }
+    }
+}
+
+impl<'a> Ser<'a> for Body {
+    fn ser_iter(self: &'a Self) -> Box<dyn Iterator<Item = u8> + 'a> {
+        Box::new(self.val.iter().cloned())
     }
 }
 
@@ -64,25 +58,26 @@ impl Post {
             body: body.clone(),
         }
     }
-    fn serialize_to(&self, buf: &mut [u8; POST_SIZE]) {
-        self.prev.to_little_endian(&mut buf[00..32]);
-        self.work.to_little_endian(&mut buf[32..64]);
-        self.body.serialize_to(&mut buf[64..(64 + BODY_SIZE)]);
-    }
-    fn serialize(&self) -> [u8; POST_SIZE] {
-        let mut buf = [0u8; POST_SIZE];
-        self.serialize_to(&mut buf);
-        buf
-    }
     fn hash(&self) -> U256 {
         if self.prev.is_zero() && self.work.is_zero() {
             return U256::zero();
         }
-        let ser = self.serialize();
+        let sered: Vec<u8> = self.ser_iter().collect();
         let hasher = sha3::Keccak256::new();
-        let hash = hasher.chain(&ser).finalize();
+        let hash = hasher.chain(&sered).finalize();
         let res = U256::from_little_endian(&hash);
         res
+    }
+}
+
+impl<'a> Ser<'a> for Post {
+    fn ser_iter(self: &'a Self) -> U8Iterator<'a> {
+        Box::new(
+            self.prev
+                .ser_iter()
+                .chain(self.work.ser_iter())
+                .chain(self.body.ser_iter()),
+        )
     }
 }
 
@@ -107,28 +102,13 @@ mod tests {
         let prev_arr = rng.gen::<[u8; 32]>();
         let prev = U256::from_little_endian(&prev_arr);
 
-        // let work = U256::from_little_endian(&[0x42]);
-        // let work = U256::from(0x44556677u64);
-
         let work = U256::from(0x04050607u64);
         let body: Body = Body::from([0x42; BODY_SIZE]);
 
         let post = Post::new(&prev, &work, &body);
         println!("POST: {:?}", post);
 
-        // // Serialize Post with `bincode`
-        // let encoded: Vec<u8> = bincode::serialize(&post).unwrap();
-
-        // // Serialize with `flexbuffers`
-        // use serde::Serialize;
-        // let mut s = flexbuffers::FlexbufferSerializer::new();
-        // post.serialize(&mut s).unwrap();
-        // let encoded = s.view();
-
-        // let mut encoded = [0u8; Post_size];
-        // post.ser(&mut encoded);
-
-        let encoded = post.serialize();
+        let encoded: Vec<u8> = post.ser_iter().collect();
 
         println!("ENCODED:");
         for i in 0..encoded.len() {

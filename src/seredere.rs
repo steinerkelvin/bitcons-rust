@@ -1,12 +1,18 @@
 use primitive_types::U256;
 
+use super::common::{Body, BODY_SIZE};
+
+// Traits
+
+pub type U8Iterator<'a> = Box<dyn Iterator<Item = u8> + 'a>;
+
 // Serializable to bytes using iterator
-trait Ser<'a> {
-    fn ser_iter(self: &'a Self) -> Box<dyn Iterator<Item = u8> + 'a>;
+pub trait Ser<'a> {
+    fn ser_iter(self: &'a Self) -> U8Iterator<'a>;
 }
 
 // Deserializable from bytes from iterator
-trait Deser {
+pub trait Deser {
     fn deser_from_iter<I>(it: I) -> Self
     where
         I: Iterator<Item = u8>;
@@ -21,8 +27,22 @@ struct U256SerIter<'a> {
     pos: usize,
 }
 
+impl Iterator for U256SerIter<'_> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<u8> {
+        if self.pos >= U256_SIZE {
+            None
+        } else {
+            let res = self.val.byte(self.pos);
+            self.pos += 1;
+            Some(res)
+        }
+    }
+}
+
 impl<'a> Ser<'a> for U256 {
-    fn ser_iter(self: &'a U256) -> Box<dyn Iterator<Item = u8> + 'a> {
+    fn ser_iter(self: &'a U256) -> U8Iterator<'a> {
         Box::new(U256SerIter { val: self, pos: 0 })
     }
 }
@@ -39,19 +59,7 @@ impl Deser for U256 {
     }
 }
 
-impl Iterator for U256SerIter<'_> {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<u8> {
-        if self.pos >= U256_SIZE {
-            None
-        } else {
-            let res = self.val.byte(self.pos);
-            self.pos += 1;
-            Some(res)
-        }
-    }
-}
+// Tests
 
 #[cfg(test)]
 mod tests {
