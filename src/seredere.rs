@@ -4,16 +4,16 @@ use super::common::{Body, BODY_SIZE};
 
 // Traits
 
-pub type U8Iterator<'a> = Box<dyn Iterator<Item = u8> + 'a>;
+pub type U8IteratorBox<'a> = Box<dyn Iterator<Item = u8> + 'a>;
 
 // Serializable to bytes using iterator
 pub trait Ser<'a> {
-    fn ser_iter(self: &'a Self) -> U8Iterator<'a>;
+    fn ser_iter(self: &'a Self) -> U8IteratorBox<'a>;
 }
 
 // Deserializable from bytes from iterator
-pub trait Deser {
-    fn deser_from_iter<I>(it: I) -> Self
+pub trait Deser<'a> {
+    fn deser_from_iter<I>(it: &mut I) -> Self
     where
         I: Iterator<Item = u8>;
 }
@@ -42,13 +42,13 @@ impl Iterator for U256SerIter<'_> {
 }
 
 impl<'a> Ser<'a> for U256 {
-    fn ser_iter(self: &'a U256) -> U8Iterator<'a> {
+    fn ser_iter(self: &'a U256) -> U8IteratorBox<'a> {
         Box::new(U256SerIter { val: self, pos: 0 })
     }
 }
 
-impl Deser for U256 {
-    fn deser_from_iter<I>(it: I) -> Self
+impl<'a> Deser<'a> for U256 {
+    fn deser_from_iter<I>(it: &mut I) -> Self
     where
         I: Iterator<Item = u8>,
     {
@@ -78,7 +78,9 @@ mod tests {
         let iter = v.ser_iter();
         let encoded: Vec<u8> = iter.collect();
         assert_eq!(encoded.len(), U256_SIZE);
-        let reconstructed = U256::deser_from_iter(encoded.iter().cloned());
+
+        let mut stream = encoded.iter().copied();
+        let reconstructed = U256::deser_from_iter(&mut stream);
         assert!(reconstructed.eq(&v));
     }
 }

@@ -4,7 +4,7 @@ use primitive_types::U256;
 // use serde::{Serialize, Serializer};
 use sha3::Digest;
 
-use super::seredere::{Deser, Ser, U8Iterator};
+use super::seredere::{Deser, Ser, U8IteratorBox};
 
 pub const WORD_SIZE: usize = 32; // 256 bits
 pub const BODY_SIZE: usize = 1024;
@@ -71,7 +71,7 @@ impl Post {
 }
 
 impl<'a> Ser<'a> for Post {
-    fn ser_iter(self: &'a Self) -> U8Iterator<'a> {
+    fn ser_iter(self: &'a Self) -> U8IteratorBox<'a> {
         Box::new(
             self.prev
                 .ser_iter()
