@@ -1,10 +1,9 @@
 use primitive_types::U256;
 
-use super::common::{Body, BODY_SIZE};
+// Boxed bytes iterator
+pub type U8IteratorBox<'a> = Box<dyn Iterator<Item = u8> + 'a>;
 
 // Traits
-
-pub type U8IteratorBox<'a> = Box<dyn Iterator<Item = u8> + 'a>;
 
 // Serializable to bytes using iterator
 pub trait Ser<'a> {
@@ -16,6 +15,32 @@ pub trait Deser<'a> {
     fn deser_from_iter<I>(it: &mut I) -> Self
     where
         I: Iterator<Item = u8>;
+}
+
+// Iterator that owns a vector of bytes
+
+pub struct VecU8Iterator {
+    val: Vec<u8>,
+    pos: usize,
+}
+
+impl VecU8Iterator {
+    pub fn new(val: Vec<u8>) -> Self {
+        VecU8Iterator {val: val, pos: 0}
+    }
+}
+
+impl Iterator for VecU8Iterator {
+    type Item = u8;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos < self.val.len() {
+            let res = self.val[self.pos];
+            self.pos += 1;
+            Some(res)
+        } else {
+            None
+        }
+    }
 }
 
 // U256 implementation

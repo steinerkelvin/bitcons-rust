@@ -4,11 +4,13 @@ use primitive_types::U256;
 // use serde::{Serialize, Serializer};
 use sha3::Digest;
 
-use super::seredere::{Deser, Ser, U8IteratorBox};
+use super::seredere::{Deser, Ser, U8IteratorBox, VecU8Iterator};
 
 pub const WORD_SIZE: usize = 32; // 256 bits
 pub const BODY_SIZE: usize = 1024;
 pub const POST_SIZE: usize = 2 * WORD_SIZE + BODY_SIZE;
+
+// Post Body
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Body {
@@ -48,6 +50,8 @@ impl<'a> Deser<'a> for Body {
         Body { val: arr }
     }
 }
+
+// Post
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Post {
@@ -115,6 +119,38 @@ fn hash_score(hash: U256) -> U256 {
         // divides hash by max 256-bit value
         U256::max_value().checked_div(hash).unwrap_or(U256::zero())
     }
+}
+
+// Address
+
+enum Address {
+    IP(std::net::IpAddr, u16),
+}
+
+impl<'a> Ser <'a> for Address {
+    fn ser_iter(self: &'a Self) -> U8IteratorBox<'a> {
+        match self {
+            Address::IP(ip, port) => {
+                use std::net::IpAddr::{V4, V6};
+                let ip6 = match ip {
+                    V4(ip4) => ip4.to_ipv6_mapped(),
+                    V6(ip6) => ip6.clone(),
+                };
+                let bytes: Vec<u8> = Vec::from(ip6.octets());
+                let iter = VecU8Iterator::new(bytes);
+                // TODO port
+                Box::new(iter)
+            }
+        }
+    }
+}
+
+// Message
+
+enum Message {
+    Ping(Vec<Address>),
+    RequestPost(U256),
+    SharePost(Post),
 }
 
 #[cfg(test)]

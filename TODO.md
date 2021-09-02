@@ -2,6 +2,12 @@
   - [ ] U256
   - [ ] Body
   - [ ] Post
+- [x] VecU8Iterator
+- Address
+  - [ ] Ser
+    - [ ] port
+    - [ ] test
+  - [ ] Deser
 - [ ] Message enum
   - [ ] definition
   - [ ] ser
