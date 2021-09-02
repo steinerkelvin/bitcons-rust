@@ -10,7 +10,7 @@ pub const WORD_SIZE: usize = 32; // 256 bits
 pub const BODY_SIZE: usize = 1024;
 pub const POST_SIZE: usize = 2 * WORD_SIZE + BODY_SIZE;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Body {
     val: [u8; BODY_SIZE],
 }
@@ -18,12 +18,12 @@ pub struct Body {
 impl Default for Body {
     fn default() -> Self {
         Body {
-            val: [0u8; BODY_SIZE],
+            val: [0u8; BODY_SIZE], // TODO Vec ?
         }
     }
 }
 
-impl From<[u8; 1024]> for Body {
+impl From<[u8; BODY_SIZE]> for Body {
     fn from(val: [u8; 1024]) -> Self {
         Body { val }
     }
@@ -35,15 +35,21 @@ impl<'a> Ser<'a> for Body {
     }
 }
 
-impl Body {
-    fn serialize_to(&self, bytes: &mut [u8]) {
-        for i in 0..(self.val.len()) {
-            bytes[i] = self.val[i];
-        }
+impl<'a> Deser<'a> for Body {
+    fn deser_from_iter<I>(it: &mut I) -> Self
+    where
+        I: Iterator<Item = u8>,
+    {
+        let it = it.take(BODY_SIZE);
+        let bytes: Vec<u8> = it.collect();
+        // TODO check size
+        let mut arr: [u8; BODY_SIZE] = [0u8; BODY_SIZE];
+        arr.clone_from_slice(bytes.as_slice());
+        Body { val: arr }
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Post {
     prev: U256, // previous post (32 bytes)
     work: U256, // extra info and nonce (32 bytes)
@@ -81,6 +87,26 @@ impl<'a> Ser<'a> for Post {
     }
 }
 
+impl<'a> Deser<'a> for Post {
+    fn deser_from_iter<I>(it: &mut I) -> Self
+    where
+        I: Iterator<Item = u8>,
+    {
+        let prev_iter = it.take(WORD_SIZE);
+        let prev_vec: Vec<u8> = prev_iter.collect();
+        let prev = U256::from_little_endian(prev_vec.as_slice());
+        let work_iter = it.take(WORD_SIZE);
+        let work_vec: Vec<u8> = work_iter.collect();
+        let work = U256::from_little_endian(work_vec.as_slice());
+        // TODO clean ugly code repetition
+        let body_iter = it.take(BODY_SIZE);
+        let body_vec: Vec<u8> = body_iter.collect();
+        let mut body = Body::default();
+        body.val.clone_from_slice(body_vec.as_slice());
+        Post { prev, work, body }
+    }
+}
+
 fn hash_score(hash: U256) -> U256 {
     if hash.is_zero() {
         // redundant. keep for clarity?
@@ -97,7 +123,7 @@ mod tests {
     use rand::prelude::*;
 
     #[test]
-    fn post_hash() {
+    fn post_seredere() {
         let mut rng = rand::thread_rng();
         let prev_arr = rng.gen::<[u8; 32]>();
         let prev = U256::from_little_endian(&prev_arr);
@@ -110,17 +136,35 @@ mod tests {
 
         let encoded: Vec<u8> = post.ser_iter().collect();
 
+        println!("LEN: {:?}", encoded.len());
+        assert_eq!(encoded.len(), POST_SIZE);
+
         println!("ENCODED:");
         for i in 0..encoded.len() {
             println!("{:4}: {:#04x}", i, encoded[i]);
         }
 
-        println!("LEN: {:?}", encoded.len());
-        assert_eq!(encoded.len(), POST_SIZE);
+        let mut stream = encoded.iter().copied();
+        let reconstructed = Post::deser_from_iter(&mut stream);
+        assert_eq!(post, reconstructed);
+        assert_eq!(post.hash(), post.hash());
+        assert!(!stream.next().is_some());
+    }
 
+    #[test]
+    fn post_hash_score() {
+        let prev = U256::from_little_endian(&[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+            19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+        ]);
+        let work = U256::from(0x04050607u64);
+        let body: Body = Body::from([0x42; BODY_SIZE]);
+
+        let post = Post::new(&prev, &work, &body);
         let hash = post.hash();
         println!("HASH: {:x}", hash);
         println!("SCORE: {}", hash_score(hash));
+        // TODO assertion
     }
 
     #[test]

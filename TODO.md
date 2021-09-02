@@ -1,8 +1,9 @@
-- Post
-  - [x] https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.chain
-  - [x] ser
-  - [ ] deser
+- [ ] error handling on Deser trait
+  - [ ] U256
+  - [ ] Body
+  - [ ] Post
 - [ ] Message enum
+  - [ ] definition
   - [ ] ser
   - [ ] deser
 
