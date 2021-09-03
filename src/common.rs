@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
 use primitive_types::U256;
-// use serde::{Serialize, Serializer};
 use sha3::Digest;
 
-use super::seredere::{Deser, Ser, U8IteratorBox, VecU8Iterator};
+use super::seredere::{Deser, DeserError, Ser, U8IteratorBox, VecU8Iterator};
 
 pub const WORD_SIZE: usize = 32; // 256 bits
 pub const BODY_SIZE: usize = 1024;
@@ -38,7 +37,7 @@ impl<'a> Ser<'a> for Body {
 }
 
 impl<'a> Deser<'a> for Body {
-    fn deser_from_iter<I>(it: &mut I) -> Self
+    fn deser_from_iter<I>(it: &mut I) -> Result<Self, DeserError>
     where
         I: Iterator<Item = u8>,
     {
@@ -47,7 +46,7 @@ impl<'a> Deser<'a> for Body {
         // TODO check size
         let mut arr: [u8; BODY_SIZE] = [0u8; BODY_SIZE];
         arr.clone_from_slice(bytes.as_slice());
-        Body { val: arr }
+        Ok(Body { val: arr })
     }
 }
 
@@ -92,7 +91,7 @@ impl<'a> Ser<'a> for Post {
 }
 
 impl<'a> Deser<'a> for Post {
-    fn deser_from_iter<I>(it: &mut I) -> Self
+    fn deser_from_iter<I>(it: &mut I) -> Result<Self, DeserError>
     where
         I: Iterator<Item = u8>,
     {
@@ -107,7 +106,7 @@ impl<'a> Deser<'a> for Post {
         let body_vec: Vec<u8> = body_iter.collect();
         let mut body = Body::default();
         body.val.clone_from_slice(body_vec.as_slice());
-        Post { prev, work, body }
+        Ok(Post { prev, work, body })
     }
 }
 
@@ -127,7 +126,7 @@ enum Address {
     IP(std::net::IpAddr, u16),
 }
 
-impl<'a> Ser <'a> for Address {
+impl<'a> Ser<'a> for Address {
     fn ser_iter(self: &'a Self) -> U8IteratorBox<'a> {
         match self {
             Address::IP(ip, port) => {

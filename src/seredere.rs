@@ -1,5 +1,12 @@
 use primitive_types::U256;
 
+// Types
+
+#[derive(Debug)]
+pub enum DeserError {
+    Message(String),
+}
+
 // Boxed bytes iterator
 pub type U8IteratorBox<'a> = Box<dyn Iterator<Item = u8> + 'a>;
 
@@ -12,8 +19,9 @@ pub trait Ser<'a> {
 
 // Deserializable from bytes from iterator
 pub trait Deser<'a> {
-    fn deser_from_iter<I>(it: &mut I) -> Self
+    fn deser_from_iter<I>(it: &mut I) -> Result<Self, DeserError>
     where
+        Self: Sized,
         I: Iterator<Item = u8>;
 }
 
@@ -26,7 +34,7 @@ pub struct VecU8Iterator {
 
 impl VecU8Iterator {
     pub fn new(val: Vec<u8>) -> Self {
-        VecU8Iterator {val: val, pos: 0}
+        VecU8Iterator { val: val, pos: 0}
     }
 }
 
@@ -73,14 +81,14 @@ impl<'a> Ser<'a> for U256 {
 }
 
 impl<'a> Deser<'a> for U256 {
-    fn deser_from_iter<I>(it: &mut I) -> Self
+    fn deser_from_iter<I>(it: &mut I) -> Result<Self, DeserError>
     where
         I: Iterator<Item = u8>,
     {
         let it = it.take(U256_SIZE);
         let bytes: Vec<u8> = it.collect();
         // TODO test size
-        U256::from_little_endian(bytes.as_slice())
+        Ok(U256::from_little_endian(bytes.as_slice()))
     }
 }
 
@@ -105,7 +113,8 @@ mod tests {
         assert_eq!(encoded.len(), U256_SIZE);
 
         let mut stream = encoded.iter().copied();
-        let reconstructed = U256::deser_from_iter(&mut stream);
+        let result = U256::deser_from_iter(&mut stream);
+        let reconstructed = result.unwrap();
         assert!(reconstructed.eq(&v));
     }
 }

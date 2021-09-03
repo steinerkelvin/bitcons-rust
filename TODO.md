@@ -1,4 +1,4 @@
-- [ ] error handling on Deser trait
+- [x] error handling on Deser trait
   - [ ] U256
   - [ ] Body
   - [ ] Post
