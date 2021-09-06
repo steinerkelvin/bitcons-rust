@@ -2,7 +2,6 @@
   - [ ] U256
   - [ ] Body
   - [ ] Post
-- [x] VecU8Iterator
 - Address
   - [ ] Ser
     - [ ] port
