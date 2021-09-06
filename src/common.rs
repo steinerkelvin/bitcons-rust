@@ -9,6 +9,10 @@ pub const WORD_SIZE: usize = 32; // 256 bits
 pub const BODY_SIZE: usize = 1024;
 pub const POST_SIZE: usize = 2 * WORD_SIZE + BODY_SIZE;
 
+// ipv6 address size
+pub const ADDRESS_SIZE: usize = 16;
+// pub const ADDRESS_LIST_SIZE = |x: usize| x + 1 * ADDRESS_SIZE;
+
 // Post Body
 
 #[derive(Debug, Clone, PartialEq)]
@@ -173,6 +177,29 @@ enum Message {
     SharePost(Post),
 }
 
+impl<'a> Ser<'a> for Message {
+    fn ser_iter(self: &'a Self) -> U8IteratorBox<'a> {
+        let it = match self {
+            Message::Ping(addresses) => {
+                let code = 0;
+                let base_it = std::iter::once(code);
+                base_it.chain(addresses.ser_iter())
+            }
+            Message::RequestPost(hash) => {
+                let code = 1;
+                let base_it = std::iter::once(code);
+                base_it.chain(hash.ser_iter())
+            }
+            Message::SharePost(post) => {
+                let code = 2;
+                let base_it = std::iter::once(code);
+                base_it.chain(post.ser_iter())
+            }
+        };
+        Box::new(it)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -256,5 +283,25 @@ mod tests {
             hex!("0228040d45e0e58100a42e08a43e95deaf00000000000000000000ffffc88955c8"));
 
         println!("ips: {:?}", ips);
+    }
+
+    #[test]
+    fn message_ping() {
+        let ips: Vec<std::net::IpAddr> = vec![
+            "2804:d45:e0e5:8100:a42e:8a4:3e95:deaf".parse().unwrap(),
+            "200.137.85.200".parse().unwrap(),
+        ];
+
+        let addrs: Vec<Address> = ips
+            .iter()
+            .map(|ip| Address::IP(ip.clone(), 42000))
+            .collect();
+        let message = Message::Ping(addrs);
+        let encoded: Vec<u8> = message.ser_iter().collect();
+        for i in 0..encoded.len() {
+            println!("{:4}: {}", i, encoded[i]);
+        }
+        assert_eq!(encoded[..],
+            hex!("000228040d45e0e58100a42e08a43e95deaf00000000000000000000ffffc88955c8"));
     }
 }
