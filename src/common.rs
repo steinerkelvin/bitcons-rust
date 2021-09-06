@@ -139,9 +139,11 @@ impl<'a> Ser<'a> for Address {
                     V4(ip4) => ip4.to_ipv6_mapped(),
                     V6(ip6) => ip6.clone(),
                 };
-                let bytes: Vec<u8> = Vec::from(ip6.octets());
+                let mut bytes: Vec<u8> = Vec::from(ip6.octets());
+                let port_bytes = port.to_le_bytes();
+                bytes.push(port_bytes[0]);
+                bytes.push(port_bytes[1]);
                 let iter = VecU8Iterator::new(bytes);
-                // TODO port
                 Box::new(iter)
             }
         }
@@ -156,6 +158,7 @@ impl<'a> Ser<'a> for Vec<Address> {
         }
         let size = size as u8;
 
+        // One byte for the number of addresses
         let base_it = std::iter::once(size);
 
         // Then serialize all addresses
@@ -280,7 +283,7 @@ mod tests {
         println!("");
 
         assert_eq!(encoded[..],
-            hex!("0228040d45e0e58100a42e08a43e95deaf00000000000000000000ffffc88955c8"));
+            hex!("0228040d45e0e58100a42e08a43e95deaf10a400000000000000000000ffffc88955c810a4"));
 
         println!("ips: {:?}", ips);
     }

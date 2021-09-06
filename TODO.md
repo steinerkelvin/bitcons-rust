@@ -3,9 +3,9 @@
   - [ ] Body
   - [ ] Post
 - Address
-  - [ ] Ser
-    - [ ] port
-    - [ ] test
+  - [x] Ser
+    - [x] port
+    - [x] test
   - [ ] Deser
 - [ ] Message enum
   - [ ] definition
