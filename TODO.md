@@ -6,10 +6,12 @@
   - [x] Ser
     - [x] port
     - [x] test
-  - [ ] Deser
-- [ ] Message enum
-  - [ ] definition
-  - [ ] ser
-  - [ ] deser
+  - [x] Deser
+- [x] Message enum
+  - [x] definition
+  - [x] ser
+  - [x] deser
 
-- [ ] test score distribution
+---
+
+- test score distribution (?)
