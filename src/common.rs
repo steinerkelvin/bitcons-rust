@@ -6,7 +6,7 @@ use sha3::Digest;
 use super::seredere::{Deser, DeserError, Ser, U8IteratorBox, VecU8Iterator};
 
 pub const WORD_SIZE: usize = 32; // 256 bits
-pub const BODY_SIZE: usize = 1024;
+pub const BODY_SIZE: usize = 1280;
 pub const POST_SIZE: usize = 2 * WORD_SIZE + BODY_SIZE;
 
 // ipv6 address size
@@ -41,7 +41,7 @@ impl Default for Body {
 }
 
 impl From<[u8; BODY_SIZE]> for Body {
-    fn from(val: [u8; 1024]) -> Self {
+    fn from(val: [u8; BODY_SIZE]) -> Self {
         Body { val }
     }
 }
@@ -72,7 +72,7 @@ impl<'a> Deser<'a> for Body {
 pub struct Post {
     prev: U256, // previous post (32 bytes)
     work: U256, // extra info and nonce (32 bytes)
-    body: Body, // post contents (1280(?) 1024 bytes)
+    body: Body, // post contents (1280 bytes)
 }
 
 impl Post {
