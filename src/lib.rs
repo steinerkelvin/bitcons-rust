@@ -1,5 +1,4 @@
-mod common;
-mod seredere;
+mod base;
 
 #[cfg(test)]
 mod tests {
