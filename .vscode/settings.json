@@ -3,6 +3,7 @@
         "bitcons",
         "Deser",
         "hasher",
+        "nonc",
         "serde",
         "seredere"
     ]

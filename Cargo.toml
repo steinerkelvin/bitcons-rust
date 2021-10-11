@@ -16,8 +16,8 @@ path = "src/main.rs"
 [dependencies]
 hex = "0.4.3"
 hex-literal = "0.3.3"
-serde = { version = "1.0.130", features = ["derive"] }
-primitive-types = { version = "0.10.1", features = ["serde"] }
+bitvec = "0.20"
+primitive-types = { version = "0.10.1" }
 rand = "0.8.4"
 sha3 = "0.9.1"
 tokio = { version = "1", features = ["full"] }

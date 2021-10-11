@@ -92,11 +92,20 @@ enum Address {
 
 // Message
 
+use bitvec::prelude as bv;
+
+#[derive(Debug, PartialEq)]
+struct Slice {
+    nonc: u64,
+    data: bv::BitVec,
+}
+
 #[derive(Debug, PartialEq)]
 enum Message {
-    Ping(Vec<Address>),
-    RequestPost(U256),
-    SharePost(Post),
+    PutPeers(Vec<Address>),
+    PutSlice(Slice),
+    PutBlock(Post),
+    AskBlock(U256),
 }
 
 pub const MESSAGE_PING_CODE: u8 = 1;
