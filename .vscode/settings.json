@@ -1,10 +1,12 @@
 {
     "cSpell.words": [
         "bitcons",
+        "bitvec",
         "Deser",
         "hasher",
         "nonc",
         "serde",
-        "seredere"
+        "seredere",
+        "targ"
     ]
 }
